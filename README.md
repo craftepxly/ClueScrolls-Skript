@@ -9,7 +9,7 @@ Ini adalah sebuah Clue Scrolls yang dibuat dengan Skript untuk Minecraft. Ini me
 1. Install Skript 2.14.1+
 2. Masukkan jar file ke folder plugins server
 2. Masukkan file `ClueScrolls.sk` di dalam folder `plugins/Skript/scripts/`
-3. Jalankan command `/skript reload ClueScrolls`
+3. Jalankan command `/skript reload ClueScrolls.sk`
 4. Berikan scroll kepada player menggunakan command `/cs give <player> <tier>`
 
 ---
