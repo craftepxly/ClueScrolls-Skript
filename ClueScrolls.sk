@@ -1,0 +1,1368 @@
+on load:
+    set {cs::config::prefix} to "&6&lClueScrolls &8▸&r "
+    if {cs::config::server_name} is not set:
+        set {cs::config::server_name} to "CraftePxly"
+
+    set {cs::config::clues_per_tier::easy}   to 3
+    set {cs::config::clues_per_tier::medium} to 5
+    set {cs::config::clues_per_tier::hard}   to 7
+
+    set {cs::config::cooldown::easy}   to 300
+    set {cs::config::cooldown::medium} to 600
+    set {cs::config::cooldown::hard}   to 1200
+
+    set {cs::config::color::easy}   to "&a"
+    set {cs::config::color::medium} to "&e"
+    set {cs::config::color::hard}   to "&c"
+
+    if {cs::clues::easy::list::*} is not set:
+        cs_init_clues()
+
+    if {cs::rewards::easy::list::*} is not set:
+        cs_init_rewards()
+
+    send "&6&lClueScrolls &8▸&r &7ClueScrolls berhasil dimuat!" to console
+
+# Mendaftarkan clue baru ke dalam pool berdasarkan tier.
+# Deskripsi task digenerate otomatis dari "type" yang diberikan, dan ID clue
+# dibuat secara otomatis dengan format "{type}_{tier}_{index}".
+# Gunakan "any" pada parameter "arg" apabila semua target ingin dihitung.
+function cs_register(type: string, arg: string, amount: integer, tier: string):
+    if {_type} is "break":
+        set {_desc} to "Hancurkan &f%{_arg}% &7sebanyak &f%{_amount}%x"
+    else if {_type} is "kill":
+        set {_desc} to "Bunuh &f%{_arg}% &7sebanyak &f%{_amount}%x"
+    else if {_type} is "walk":
+        set {_desc} to "Berjalan sejauh &f%{_amount}% &7blok"
+    else if {_type} is "swim":
+        set {_desc} to "Berenang sejauh &f%{_amount}% &7blok"
+    else if {_type} is "dive":
+        set {_desc} to "Menyelam selama &f%{_amount}% &7detik"
+    else if {_type} is "fish":
+        set {_desc} to "Pancing ikan sebanyak &f%{_amount}%x"
+    else if {_type} is "craft":
+        set {_desc} to "Buat &f%{_arg}% &7sebanyak &f%{_amount}%x"
+    else if {_type} is "place":
+        set {_desc} to "Pasang &f%{_arg}% &7sebanyak &f%{_amount}%x"
+    else if {_type} is "eat":
+        set {_desc} to "Makan &f%{_arg}% &7sebanyak &f%{_amount}%x"
+    else if {_type} is "enchant":
+        set {_desc} to "Enchant item sebanyak &f%{_amount}%x"
+    else if {_type} is "smelt":
+        set {_desc} to "Lebur &f%{_arg}% &7sebanyak &f%{_amount}%x"
+    else if {_type} is "tame":
+        set {_desc} to "Jinakkan &f%{_arg}% &7sebanyak &f%{_amount}%x"
+    else if {_type} is "trade":
+        set {_desc} to "Berdagang dengan Villager sebanyak &f%{_amount}%x"
+    else if {_type} is "explore":
+        set {_desc} to "Jelajahi &f%{_amount}% &7blok dari spawn"
+    else if {_type} is "chat":
+        set {_desc} to "Kirim pesan di chat sebanyak &f%{_amount}%x"
+    else if {_type} is "sleep":
+        set {_desc} to "Tidur di kasur sebanyak &f%{_amount}%x"
+    else if {_type} is "die":
+        set {_desc} to "Mati sebanyak &f%{_amount}%x &7(kalau berani!)"
+    else if {_type} is "shoot":
+        set {_desc} to "Tembak mob dengan panah sebanyak &f%{_amount}%x"
+    else if {_type} is "brew":
+        set {_desc} to "Buat potion sebanyak &f%{_amount}%x"
+    else if {_type} is "collect":
+        set {_desc} to "Kumpulkan &f%{_arg}% &7sebanyak &f%{_amount}%x"
+    else if {_type} is "open":
+        set {_desc} to "Buka &f%{_arg}% &7sebanyak &f%{_amount}%x"
+    else if {_type} is "jump":
+        set {_desc} to "Lompat sebanyak &f%{_amount}%x"
+    else:
+        set {_desc} to "&f%{_type}% %{_arg}% x%{_amount}%"
+
+    set {_idx} to size of {cs::clues::%{_tier}%::list::*}
+    add 1 to {_idx}
+    set {_id} to "%{_type}%_%{_tier}%_%{_idx}%"
+
+    set {cs::clues::%{_tier}%::%{_id}%::type}   to {_type}
+    set {cs::clues::%{_tier}%::%{_id}%::desc}   to {_desc}
+    set {cs::clues::%{_tier}%::%{_id}%::target} to {_arg}
+    set {cs::clues::%{_tier}%::%{_id}%::amount} to {_amount}
+    add {_id} to {cs::clues::%{_tier}%::list::*}
+
+# Mendaftarkan semua clue default ke dalam pool.
+# Dipanggil sekali saat server load apabila pool clue belum ada.
+# Untuk menambahkan clue baru, tambahkan baris "cs_register()" di sini.
+function cs_init_clues():
+    cs_register("kill",    "zombie",          5,   "easy")
+    cs_register("kill",    "skeleton",        5,   "easy")
+    cs_register("kill",    "creeper",         3,   "easy")
+    cs_register("break",   "stone",           20,  "easy")
+    cs_register("break",   "oak log",         10,  "easy")
+    cs_register("break",   "dirt",            15,  "easy")
+    cs_register("craft",   "oak planks",      10,  "easy")
+    cs_register("craft",   "stick",           5,   "easy")
+    cs_register("craft",   "crafting table",  1,   "easy")
+    cs_register("place",   "stone",           10,  "easy")
+    cs_register("eat",     "bread",           5,   "easy")
+    cs_register("eat",     "apple",           3,   "easy")
+    cs_register("fish",    "any",             3,   "easy")
+    cs_register("swim",    "any",             50,  "easy")
+    cs_register("jump",    "any",             20,  "easy")
+    cs_register("smelt",   "raw iron",        5,   "easy")
+    cs_register("chat",    "any",             5,   "easy")
+    cs_register("sleep",   "any",             1,   "easy")
+    cs_register("tame",    "any",             1,   "easy")
+    cs_register("collect", "wheat",           10,  "easy")
+
+    cs_register("kill",    "zombie",          10,  "medium")
+    cs_register("kill",    "enderman",        5,   "medium")
+    cs_register("kill",    "witch",           3,   "medium")
+    cs_register("kill",    "spider",          5,   "medium")
+    cs_register("kill",    "blaze",           2,   "medium")
+    cs_register("break",   "stone",           30,  "medium")
+    cs_register("break",   "iron ore",        10,  "medium")
+    cs_register("break",   "gold ore",        5,   "medium")
+    cs_register("craft",   "iron sword",      1,   "medium")
+    cs_register("craft",   "iron pickaxe",    1,   "medium")
+    cs_register("craft",   "bow",             1,   "medium")
+    cs_register("smelt",   "raw iron",        15,  "medium")
+    cs_register("smelt",   "raw gold",        5,   "medium")
+    cs_register("fish",    "any",             10,  "medium")
+    cs_register("enchant", "any",             1,   "medium")
+    cs_register("trade",   "any",             1,   "medium")
+    cs_register("brew",    "any",             1,   "medium")
+    cs_register("tame",    "wolf",            1,   "medium")
+    cs_register("explore", "any",             500, "medium")
+    cs_register("collect", "wheat",           32,  "medium")
+    cs_register("place",   "torch",           1,   "medium")
+    cs_register("eat",     "cooked beef",     3,   "medium")
+    cs_register("die",     "any",             1,   "medium")
+    cs_register("shoot",   "any",             5,   "medium")
+    cs_register("open",    "chest",           3,   "medium")
+
+    cs_register("kill",    "ender dragon",    1,   "hard")
+    cs_register("kill",    "wither",          1,   "hard")
+    cs_register("kill",    "zombie",          20,  "hard")
+    cs_register("kill",    "enderman",        10,  "hard")
+    cs_register("kill",    "ghast",           5,   "hard")
+    cs_register("kill",    "blaze",           10,  "hard")
+    cs_register("kill",    "elder guardian",  3,   "hard")
+    cs_register("break",   "diamond ore",     10,  "hard")
+    cs_register("break",   "ancient debris",  5,   "hard")
+    cs_register("craft",   "diamond sword",   1,   "hard")
+    cs_register("craft",   "netherite ingot", 1,   "hard")
+    cs_register("craft",   "beacon",          1,   "hard")
+    cs_register("enchant", "any",             5,   "hard")
+    cs_register("smelt",   "ancient debris",  5,   "hard")
+    cs_register("fish",    "any",             1,   "hard")
+    cs_register("brew",    "any",             5,   "hard")
+    cs_register("explore", "any",             2000,"hard")
+    cs_register("shoot",   "any",             20,  "hard")
+    cs_register("trade",   "any",             10,  "hard")
+    cs_register("dive",    "any",             60,  "hard")
+
+# Mendaftarkan semua reward default per tier.
+# Dipanggil sekali saat server load apabila pool reward belum ada.
+# Untuk menambahkan reward baru, tambahkan baris "cs_add_reward()" di sini.
+function cs_init_rewards():
+    cs_add_reward("easy", "diamond_1",   "command", "give {player} diamond 3",          100)
+    cs_add_reward("easy", "emerald_1",   "command", "give {player} emerald 5",           90)
+    cs_add_reward("easy", "iron_1",      "command", "give {player} iron_ingot 16",       80)
+    cs_add_reward("easy", "xp_easy",     "command", "xp add {player} 200",              70)
+    cs_add_reward("easy", "food_easy",   "command", "give {player} cooked_beef 8",      60)
+    cs_add_reward("easy", "rare_easy",   "command", "give {player} golden_apple 1",     20)
+
+    cs_add_reward("medium", "diamond_m",  "command", "give {player} diamond 8",         100)
+    cs_add_reward("medium", "emerald_m",  "command", "give {player} emerald 16",         90)
+    cs_add_reward("medium", "xp_med",     "command", "xp add {player} 500",              80)
+    cs_add_reward("medium", "enchbook_m", "command", "give {player} enchanted_book 1",   50)
+    cs_add_reward("medium", "netherstar", "command", "give {player} nether_star 1",      15)
+    cs_add_reward("medium", "rare_med",   "command", "give {player} totem_of_undying 1", 10)
+
+    cs_add_reward("hard", "netherite_h", "command", "give {player} netherite_ingot 2",  100)
+    cs_add_reward("hard", "diamond_h",   "command", "give {player} diamond 16",          90)
+    cs_add_reward("hard", "xp_hard",     "command", "xp add {player} 1500",              80)
+    cs_add_reward("hard", "elytra_h",    "command", "give {player} elytra 1",            20)
+    cs_add_reward("hard", "rare_hard",   "command", "give {player} dragon_egg 1",         5)
+    cs_add_reward("hard", "super_hard",  "command", "give {player} netherite_sword 1",    3)
+
+# Mendaftarkan reward baru ke dalam pool berdasarkan tier.
+# Parameter "weight" menentukan seberapa sering reward tersebut muncul,
+# semakin besar nilainya semakin sering reward itu diberikan.
+# "{player}" di dalam string "value" akan diganti otomatis dengan nama player.
+function cs_add_reward(tier: string, name: string, type: string, value: string, weight: integer):
+    set {cs::rewards::%{_tier}%::%{_name}%::type}   to {_type}
+    set {cs::rewards::%{_tier}%::%{_name}%::value}  to {_value}
+    set {cs::rewards::%{_tier}%::%{_name}%::weight} to {_weight}
+    add {_name} to {cs::rewards::%{_tier}%::list::*}
+
+# Mengecek apakah target clue cocok dengan entity, block, atau item yang aktual.
+# Mengembalikan "true" apabila "target" bernilai "any" atau sama dengan "actual".
+function cs_target_matches(target: string, actual: string) :: boolean:
+    if {_target} is "any":
+        return true
+    if {_target} is {_actual}:
+        return true
+    return false
+
+# Mengembalikan nama tier dengan warna untuk ditampilkan ke player.
+# easy → &a&lMudah, medium → &e&lSedang, hard → &c&lSulit
+function cs_tier_display(tier: string) :: string:
+    if {_tier} is "easy":
+        return "&a&lMudah"
+    if {_tier} is "medium":
+        return "&e&lSedang"
+    if {_tier} is "hard":
+        return "&c&lSulit"
+    return {_tier}
+
+# Memilih clue secara acak dari pool sesuai tier untuk satu scroll.
+# Jumlah clue yang dipilih mengikuti konfigurasi "clues_per_tier".
+# Mencoba menghindari clue duplikat dengan melakukan retry hingga 20 kali.
+function cs_generate_scroll(tier: string, p: player) :: strings:
+    set {_count}    to {cs::config::clues_per_tier::%{_tier}%}
+    set {_pool::*}  to {cs::clues::%{_tier}%::list::*}
+    delete {_picked::*}
+
+    loop {_count} times:
+        set {_max} to size of {_pool::*}
+        if {_max} <= 0:
+            stop loop
+        set {_rand}   to random integer between 1 and {_max}
+        set {_chosen} to {_pool::%{_rand}%}
+        if {_chosen} is in {_picked::*}:
+            loop 20 times:
+                if {_chosen} is not in {_picked::*}:
+                    stop loop
+                set {_rand}   to random integer between 1 and {_max}
+                set {_chosen} to {_pool::%{_rand}%}
+        add {_chosen} to {_picked::*}
+
+    return {_picked::*}
+
+# Memilih satu reward secara acak dari pool menggunakan sistem weighted random.
+# Total semua bobot dijumlahkan, lalu angka acak diambil dari 1 hingga total tersebut.
+# Reward dengan bobot lebih besar memiliki peluang lebih tinggi untuk terpilih.
+function cs_pick_reward(tier: string) :: string:
+    set {_total} to 0
+    loop {cs::rewards::%{_tier}%::list::*}:
+        add {cs::rewards::%{_tier}%::%loop-value%::weight} to {_total}
+    set {_roll} to random integer between 1 and {_total}
+    set {_acc}  to 0
+    loop {cs::rewards::%{_tier}%::list::*}:
+        add {cs::rewards::%{_tier}%::%loop-value%::weight} to {_acc}
+        if {_roll} <= {_acc}:
+            return loop-value
+    return ""
+
+# Mengembalikan UID scroll yang sedang aktif milik player.
+# Mengembalikan nilai kosong apabila player tidak memiliki scroll aktif.
+function cs_get_uid(p: player) :: string:
+    return {cs::active::%{_p}'s uuid%}
+
+# Membuat sesi scroll baru untuk player.
+# Menyimpan data owner, tier, dan list clue, kemudian mengeset progress semua clue ke 0.
+function cs_create_session(p: player, uid: string, tier: string, clues: strings):
+    set {cs::session::%{_uid}%::owner}      to "%{_p}'s uuid%"
+    set {cs::session::%{_uid}%::tier}       to {_tier}
+    set {cs::session::%{_uid}%::clues::*}   to {_clues::*}
+    set {cs::session::%{_uid}%::completed}  to 0
+    set {cs::session::%{_uid}%::total}      to size of {_clues::*}
+    loop {_clues::*}:
+        set {cs::session::%{_uid}%::progress::%loop-value%} to 0
+    set {cs::active::%{_p}'s uuid%} to {_uid}
+
+# Menjeda sesi aktif player tanpa menghapus data progress.
+# Dipanggil saat player keluar dari server atau scroll tidak ditemukan di inventory.
+function cs_pause_session(p: player):
+    delete {cs::active::%{_p}'s uuid%}
+
+# Melanjutkan sesi scroll yang sebelumnya dijeda.
+function cs_resume_session(p: player, uid: string):
+    set {cs::active::%{_p}'s uuid%} to {_uid}
+
+# Menghapus seluruh data sesi dari variabel secara permanen.
+# Dipanggil setelah scroll selesai diselesaikan atau di-abandon oleh player.
+function cs_delete_session(uid: string):
+    delete {cs::session::%{_uid}%::*}
+
+# Membuat item scroll baru dengan lore awal dan UID yang tertanam di lore tersembunyi.
+# Material item berbeda per tier: "paper" (easy), "book" (medium), "enchanted book" (hard).
+# UID dibuat dari UUID player ditambah angka acak 6 digit.
+function cs_create_scroll_item(tier: string, p: player) :: item:
+    set {_color}   to {cs::config::color::%{_tier}%}
+    set {_display} to cs_tier_display({_tier})
+
+    if {_tier} is "easy":
+        set {_mat} to paper
+    else if {_tier} is "medium":
+        set {_mat} to book
+    else:
+        set {_mat} to enchanted book
+
+    set {_rand} to random integer between 100000 and 999999
+    set {_uid} to "%{_p}'s uuid%-%{_rand}%"
+
+    set {_item} to 1 of {_mat}
+    set name of {_item} to "%{_color}%✦ %{_display}%%{_color}% Clue Scroll ✦"
+    set line 1 of lore of {_item} to "&fSelesaikan tugas berikut untuk"
+    set line 2 of lore of {_item} to "&fmendapatkan harta karun!"
+    set line 3 of lore of {_item} to ""
+    set line 4 of lore of {_item} to "&f✦ Clue Selesai: &f0 &7/ &f%{cs::config::clues_per_tier::%{_tier}%}%"
+    set line 5 of lore of {_item} to ""
+    set line 6 of lore of {_item} to "&a✦ Klik Kanan untuk mulai clue pertama!"
+    set line 7 of lore of {_item} to ""
+    set line 8 of lore of {_item} to "&8uid:%{_uid}%"
+    set line 9 of lore of {_item} to "&8owner:%{_p}'s uuid%"
+    return {_item}
+
+# Mencari slot inventory player yang berisi scroll dengan UID tertentu.
+# Apabila "searchUid" kosong, mengembalikan slot scroll pertama yang ditemukan.
+# Mengembalikan -1 apabila scroll tidak ditemukan di inventory.
+function cs_find_scroll(p: player, searchUid: string) :: integer:
+    loop integers from 0 to 35:
+        set {_slot} to loop-integer
+        set {_s}    to slot {_slot} of {_p}'s inventory
+        if name of {_s} contains "Clue Scroll":
+            set {_slore::*} to lore of {_s}
+            loop {_slore::*}:
+                if loop-value-2 contains "uid:":
+                    set {_lineUid} to loop-value-2
+                    replace all "uid:" in {_lineUid} with ""
+                    replace all "&8" in {_lineUid} with ""
+                    replace all "§8" in {_lineUid} with ""
+                    replace all " " in {_lineUid} with ""
+                    if {_searchUid} is "":
+                        delete {_slore::*}
+                        return {_slot}
+                    if {_lineUid} is {_searchUid}:
+                        delete {_slore::*}
+                        return {_slot}
+            delete {_slore::*}
+    return -1
+
+# Membaca UID dari lore tersembunyi pada item scroll.
+# UID disimpan di lore dengan format "&8uid:{uid}".
+# Mengembalikan string kosong apabila tidak ditemukan.
+function cs_read_uid_from_item(it: item) :: string:
+    set {_lore::*} to lore of {_it}
+    loop {_lore::*}:
+        if loop-value contains "uid:":
+            set {_line} to loop-value
+            replace all "&8" in {_line} with ""
+            replace all "§8" in {_line} with ""
+            replace all "uid:" in {_line} with ""
+            set {_line} to {_line} in lowercase
+            replace all " " in {_line} with ""
+            delete {_lore::*}
+            return {_line}
+    delete {_lore::*}
+    return ""
+
+# Membaca UUID pemilik dari lore tersembunyi pada item scroll.
+# Owner disimpan di lore dengan format "&8owner:{uuid}".
+# Mengembalikan string kosong apabila tidak ditemukan.
+function cs_read_owner_from_item(it: item) :: string:
+    set {_lore::*} to lore of {_it}
+    loop {_lore::*}:
+        if loop-value contains "owner:":
+            set {_line} to loop-value
+            replace all "&8" in {_line} with ""
+            replace all "§8" in {_line} with ""
+            replace all "owner:" in {_line} with ""
+            replace all " " in {_line} with ""
+            delete {_lore::*}
+            return {_line}
+    delete {_lore::*}
+    return ""
+
+# Memperbarui lore item scroll di inventory player sesuai progress terkini.
+# Apabila ada clue aktif, lore menampilkan deskripsi dan progress clue tersebut.
+# Apabila tidak ada clue aktif, lore menampilkan tombol untuk melanjutkan ke clue berikutnya.
+function cs_update_scroll_lore(p: player):
+    set {_uid} to cs_get_uid({_p})
+    if {_uid} is not set:
+        stop
+    if {_uid} is "":
+        stop
+
+    set {_tier}  to {cs::session::%{_uid}%::tier}
+    set {_done}  to {cs::session::%{_uid}%::completed}
+    set {_total} to {cs::session::%{_uid}%::total}
+    set {_cid}   to {cs::session::%{_uid}%::current_clue}
+
+    set {_targetSlot} to -1
+    loop integers from 0 to 35:
+        set {_curSlot} to loop-integer
+        set {_s}       to slot {_curSlot} of {_p}'s inventory
+        if name of {_s} contains "Clue Scroll":
+            set {_slore::*} to lore of {_s}
+            loop {_slore::*}:
+                if loop-value-2 contains "uid:":
+                    set {_lineCheck} to loop-value-2
+                    replace all "&8" in {_lineCheck} with ""
+                    replace all "§8" in {_lineCheck} with ""
+                    replace all "uid:" in {_lineCheck} with ""
+                    replace all " " in {_lineCheck} with ""
+                    if {_lineCheck} is {_uid}:
+                        set {_targetSlot} to {_curSlot}
+                        stop loop
+            delete {_slore::*}
+        if {_targetSlot} >= 0:
+            stop loop
+
+    if {_targetSlot} < 0:
+        stop
+
+    set {_item} to slot {_targetSlot} of {_p}'s inventory
+
+    if {_cid} is not set:
+        set line 1 of lore of {_item} to "&fSelesaikan tugas berikut untuk"
+        set line 2 of lore of {_item} to "&fmendapatkan harta karun!"
+        set line 3 of lore of {_item} to ""
+        set line 4 of lore of {_item} to "&f✦ Clue Selesai: &f%{_done}% &7/ &f%{_total}%"
+        set line 5 of lore of {_item} to ""
+        set line 6 of lore of {_item} to "&a✦ Klik Kanan untuk clue berikutnya!"
+        set line 7 of lore of {_item} to ""
+        set line 8 of lore of {_item} to "&8uid:%{_uid}%"
+        set line 9 of lore of {_item} to "&8owner:%{cs::session::%{_uid}%::owner}%"
+    else:
+        set {_desc} to {cs::clues::%{_tier}%::%{_cid}%::desc}
+        set {_need} to {cs::clues::%{_tier}%::%{_cid}%::amount}
+        set {_prog} to {cs::session::%{_uid}%::progress::%{_cid}%}
+        set line 1 of lore of {_item} to "&fSelesaikan tugas berikut untuk"
+        set line 2 of lore of {_item} to "&fmendapatkan harta karun!"
+        set line 3 of lore of {_item} to ""
+        set line 4 of lore of {_item} to "&f✦ Tugas Aktif: &e%{_desc}%"
+        set line 5 of lore of {_item} to "&f✦ Progres: &f%{_prog}%&7/&f%{_need}%"
+        set line 6 of lore of {_item} to ""
+        set line 7 of lore of {_item} to "&f✦ Selesai: &f%{_done}% &7/ &f%{_total}%"
+        set line 8 of lore of {_item} to ""
+        set line 9 of lore of {_item} to "&8uid:%{_uid}%"
+        set line 10 of lore of {_item} to "&8owner:%{cs::session::%{_uid}%::owner}%"
+
+    set slot {_targetSlot} of {_p}'s inventory to {_item}
+
+# Memulai clue berikutnya yang belum diselesaikan dalam sesi aktif.
+# Apabila semua clue sudah selesai, akan memanggil "cs_complete_scroll()".
+# Mengirim notifikasi ke player dan memperbarui lore scroll.
+function cs_start_next_clue(p: player):
+    set {_uid}   to cs_get_uid({_p})
+    set {_total} to {cs::session::%{_uid}%::total}
+    set {_done}  to {cs::session::%{_uid}%::completed}
+
+    if {_done} >= {_total}:
+        cs_complete_scroll({_p})
+        stop
+
+    loop {cs::session::%{_uid}%::clues::*}:
+        set {_cid} to loop-value
+        if {cs::session::%{_uid}%::done::%{_cid}%} is not set:
+            set {cs::session::%{_uid}%::current_clue} to {_cid}
+            play sound "entity.experience_orb.pickup" with volume 1 and pitch 1.5 to {_p}
+            set {_newDesc} to {cs::clues::%{cs::session::%{_uid}%::tier}%::%{_cid}%::desc}
+
+            send "" to {_p}
+            send "&f&m                                  " to {_p}
+            send "  &6✦ &e&lCLUE BARU TELAH TERBUKA!" to {_p}
+            send "" to {_p}
+            send "  &fTugas barumu: &a%{_newDesc}%" to {_p}
+            send "  &7Selesaikan tugasnya dan klik kanan scrollmu untuk lanjut." to {_p}
+            send "&f&m                                  " to {_p}
+            send "" to {_p}
+            cs_update_scroll_lore({_p})
+            stop
+
+on right click:
+    if player's held item is air:
+        stop
+    set {_iname} to name of player's held item
+    if {_iname} is not set:
+        stop
+    if {_iname} does not contain "Clue Scroll":
+        stop
+
+    cancel event
+
+    if {_iname} contains "Mudah":
+        set {_tier} to "easy"
+    else if {_iname} contains "Sedang":
+        set {_tier} to "medium"
+    else if {_iname} contains "Sulit":
+        set {_tier} to "hard"
+    else:
+        stop
+
+    set {_uid}   to cs_read_uid_from_item(player's held item)
+    set {_owner} to cs_read_owner_from_item(player's held item)
+
+    if {_uid} is "":
+        send "%{cs::config::prefix}%&cScroll ini tidak valid (tidak ada UID)." to player
+        stop
+    if {_uid} is not set:
+        send "%{cs::config::prefix}%&cScroll ini tidak valid (tidak ada UID)." to player
+        stop
+
+    if {_owner} is set:
+        if {_owner} is not "":
+            if {_owner} is not "%player's uuid%":
+                send "%{cs::config::prefix}%&cScroll ini bukan milikmu!" to player
+                stop
+
+    set {_activeUid} to cs_get_uid(player)
+    if {_activeUid} is set:
+        if {_activeUid} is not "":
+            if {_activeUid} is {_uid}:
+                set {_cid} to {cs::session::%{_uid}%::current_clue}
+                if {_cid} is set:
+                    set {_prog} to {cs::session::%{_uid}%::progress::%{_cid}%}
+                    set {_need} to {cs::clues::%{_tier}%::%{_cid}%::amount}
+                    if {_prog} < {_need}:
+                        send "%{cs::config::prefix}%&fSelesaikan clue aktif dulu! &7(%{_prog}%/%{_need}%)" to player
+                        stop
+                cs_start_next_clue(player)
+                stop
+
+            set {_otherTier} to {cs::session::%{_activeUid}%::tier}
+            send "%{cs::config::prefix}%&fKamu sudah punya scroll %cs_tier_display({_otherTier})% aktif!" to player
+            stop
+
+    if {cs::session::%{_uid}%::tier} is set:
+        if {cs::session::%{_uid}%::owner} is "%player's uuid%":
+            cs_resume_session(player, {_uid})
+            set {_cid} to {cs::session::%{_uid}%::current_clue}
+            if {_cid} is set:
+                set {_prog} to {cs::session::%{_uid}%::progress::%{_cid}%}
+                set {_need} to {cs::clues::%{_tier}%::%{_cid}%::amount}
+                if {_prog} < {_need}:
+                    play sound "entity.experience_orb.pickup" with volume 1 and pitch 1 to player
+                    send "%{cs::config::prefix}%&aSesi dilanjutkan! &7Clue: &f%{cs::clues::%{_tier}%::%{_cid}%::desc}% &7(%{_prog}%/%{_need}%)" to player
+                    cs_update_scroll_lore(player)
+                    stop
+            cs_start_next_clue(player)
+            stop
+
+    if cs_check_cooldown(player, {_tier}) is false:
+        stop
+
+    set {_clues::*} to cs_generate_scroll({_tier}, player)
+    if size of {_clues::*} is 0:
+        send "%{cs::config::prefix}%&cGagal membuat scroll. Tidak ada clue tersedia." to player
+        stop
+
+    cs_create_session(player, {_uid}, {_tier}, {_clues::*})
+    cs_start_next_clue(player)
+
+every 5 seconds:
+    loop all players:
+        set {_p}   to loop-player
+        set {_uuid} to {_p}'s uuid
+
+        loop integers from 0 to 35:
+            set {_slot} to loop-integer-2
+            set {_s}    to slot {_slot} of {_p}'s inventory
+            if name of {_s} contains "Clue Scroll":
+                set {_slore::*} to lore of {_s}
+                set {_foundUid}   to ""
+                set {_foundOwner} to ""
+                loop {_slore::*}:
+                    if loop-value-3 contains "uid:":
+                        set {_tmp} to loop-value-3
+                        replace all "&8" in {_tmp} with ""
+                        replace all "§8" in {_tmp} with ""
+                        replace all "uid:" in {_tmp} with ""
+                        replace all " " in {_tmp} with ""
+                        set {_foundUid} to {_tmp}
+                    if loop-value-3 contains "owner:":
+                        set {_tmp2} to loop-value-3
+                        replace all "&8" in {_tmp2} with ""
+                        replace all "§8" in {_tmp2} with ""
+                        replace all "owner:" in {_tmp2} with ""
+                        replace all " " in {_tmp2} with ""
+                        set {_foundOwner} to {_tmp2}
+                delete {_slore::*}
+
+                if {_foundOwner} is "%{_uuid}%":
+                    if {_foundUid} is not "":
+                        if {cs::session::%{_foundUid}%::tier} is set:
+                            set {_activeNow} to cs_get_uid({_p})
+                            set {_doResume} to false
+                            if {_activeNow} is not set:
+                                set {_doResume} to true
+                            if {_activeNow} is "":
+                                set {_doResume} to true
+                            if {_doResume} is true:
+                                cs_resume_session({_p}, {_foundUid})
+                                send "%{cs::config::prefix}%&aQuest dilanjutkan karena kertas ditemukan di inventory!" to {_p}
+                                cs_update_scroll_lore({_p})
+
+        set {_activeUid} to cs_get_uid({_p})
+        if {_activeUid} is set:
+            if {_activeUid} is not "":
+                set {_slotFound} to cs_find_scroll({_p}, {_activeUid})
+                if {_slotFound} < 0:
+                    cs_pause_session({_p})
+                    send "%{cs::config::prefix}%&cKertas scrollmu tidak terdeteksi di inventory! Quest dijeda." to {_p}
+
+        set {_uid2} to cs_get_uid({_p})
+        if {_uid2} is not set:
+            continue
+        if {_uid2} is "":
+            continue
+        set {_tier2} to {cs::session::%{_uid2}%::tier}
+        if {_tier2} is not set:
+            continue
+
+        set {_cid2} to {cs::session::%{_uid2}%::current_clue}
+        if {_cid2} is not set:
+            continue
+        if {cs::clues::%{_tier2}%::%{_cid2}%::type} is not "explore":
+            continue
+
+        set {_need2}  to {cs::clues::%{_tier2}%::%{_cid2}%::amount}
+        set {_prog2}  to {cs::session::%{_uid2}%::progress::%{_cid2}%}
+        if {_prog2} >= {_need2}:
+            continue
+
+        set {_dist} to 0
+        set {_pLoc} to location of {_p}
+        set {_worldNames::*} to "world", "world_nether", "world_the_end"
+        set {_wIdx} to 0
+        loop 3 times:
+            add 1 to {_wIdx}
+            set {_wName} to {_worldNames::%{_wIdx}%}
+            set {_w} to world({_wName})
+            if {_w} is set:
+                if world of {_pLoc} is {_w}:
+                    set {_d} to distance between {_pLoc} and spawn location of {_w}
+                    if {_d} > {_dist}:
+                        set {_dist} to {_d}
+
+        if {_dist} >= {_need2}:
+            set {cs::session::%{_uid2}%::progress::%{_cid2}%} to {_need2}
+            cs_update_scroll_lore({_p})
+            cs_check_clue_complete({_p}, {_cid2})
+
+# Mengembalikan ID clue aktif player apabila tipenya sesuai dengan yang dicari.
+# Digunakan oleh semua event handler untuk mengecek apakah task yang terjadi relevan.
+# Mengembalikan string kosong apabila tidak ada sesi aktif atau tipe tidak sesuai.
+function cs_get_active_clue_if_type(p: player, type: string) :: string:
+    set {_uid} to cs_get_uid({_p})
+    if {_uid} is not set:
+        return ""
+    if {_uid} is "":
+        return ""
+    set {_cid} to {cs::session::%{_uid}%::current_clue}
+    if {_cid} is not set:
+        return ""
+    set {_tier} to {cs::session::%{_uid}%::tier}
+    if {cs::clues::%{_tier}%::%{_cid}%::type} is not {_type}:
+        return ""
+    return {_cid}
+
+on death of living entity:
+    attacker is a player
+    victim is not a player
+    set {_p}   to attacker
+    set {_cid} to cs_get_active_clue_if_type({_p}, "kill")
+    if {_cid} is "":
+        stop
+    set {_uid}    to cs_get_uid({_p})
+    set {_tier}   to {cs::session::%{_uid}%::tier}
+    set {_target} to {cs::clues::%{_tier}%::%{_cid}%::target}
+    set {_mob}    to "%type of victim%" in lowercase
+    if cs_target_matches({_target}, {_mob}) is true:
+        set {_need} to {cs::clues::%{_tier}%::%{_cid}%::amount}
+        set {_prog} to {cs::session::%{_uid}%::progress::%{_cid}%}
+        if {_prog} < {_need}:
+            add 1 to {cs::session::%{_uid}%::progress::%{_cid}%}
+            cs_update_scroll_lore({_p})
+            cs_check_clue_complete({_p}, {_cid})
+
+on break:
+    set {_cid} to cs_get_active_clue_if_type(player, "break")
+    if {_cid} is "":
+        stop
+    set {_uid}    to cs_get_uid(player)
+    set {_tier}   to {cs::session::%{_uid}%::tier}
+    set {_target} to {cs::clues::%{_tier}%::%{_cid}%::target}
+    set {_block}  to "%type of event-block%" in lowercase
+    if cs_target_matches({_target}, {_block}) is true:
+        set {_need} to {cs::clues::%{_tier}%::%{_cid}%::amount}
+        set {_prog} to {cs::session::%{_uid}%::progress::%{_cid}%}
+        if {_prog} < {_need}:
+            add 1 to {cs::session::%{_uid}%::progress::%{_cid}%}
+            cs_update_scroll_lore(player)
+            cs_check_clue_complete(player, {_cid})
+
+on place:
+    set {_cid} to cs_get_active_clue_if_type(player, "place")
+    if {_cid} is "":
+        stop
+    set {_uid}    to cs_get_uid(player)
+    set {_tier}   to {cs::session::%{_uid}%::tier}
+    set {_target} to {cs::clues::%{_tier}%::%{_cid}%::target}
+    set {_block}  to "%type of event-block%" in lowercase
+    if cs_target_matches({_target}, {_block}) is true:
+        set {_need} to {cs::clues::%{_tier}%::%{_cid}%::amount}
+        set {_prog} to {cs::session::%{_uid}%::progress::%{_cid}%}
+        if {_prog} < {_need}:
+            add 1 to {cs::session::%{_uid}%::progress::%{_cid}%}
+            cs_update_scroll_lore(player)
+            cs_check_clue_complete(player, {_cid})
+
+on craft:
+    set {_cid} to cs_get_active_clue_if_type(player, "craft")
+    if {_cid} is "":
+        stop
+    set {_uid}     to cs_get_uid(player)
+    set {_tier}    to {cs::session::%{_uid}%::tier}
+    set {_target}  to {cs::clues::%{_tier}%::%{_cid}%::target}
+    set {_crafted} to "%type of event-item%" in lowercase
+    set {_count}   to amount of event-item
+    if cs_target_matches({_target}, {_crafted}) is true:
+        set {_need} to {cs::clues::%{_tier}%::%{_cid}%::amount}
+        set {_prog} to {cs::session::%{_uid}%::progress::%{_cid}%}
+        if {_prog} < {_need}:
+            add {_count} to {cs::session::%{_uid}%::progress::%{_cid}%}
+            cs_update_scroll_lore(player)
+            cs_check_clue_complete(player, {_cid})
+
+on consume:
+    set {_cid} to cs_get_active_clue_if_type(player, "eat")
+    if {_cid} is "":
+        stop
+    set {_uid}    to cs_get_uid(player)
+    set {_tier}   to {cs::session::%{_uid}%::tier}
+    set {_target} to {cs::clues::%{_tier}%::%{_cid}%::target}
+    set {_food}   to "%type of event-item%" in lowercase
+    if cs_target_matches({_target}, {_food}) is true:
+        set {_need} to {cs::clues::%{_tier}%::%{_cid}%::amount}
+        set {_prog} to {cs::session::%{_uid}%::progress::%{_cid}%}
+        if {_prog} < {_need}:
+            add 1 to {cs::session::%{_uid}%::progress::%{_cid}%}
+            cs_update_scroll_lore(player)
+            cs_check_clue_complete(player, {_cid})
+
+on fish catch:
+    set {_cid} to cs_get_active_clue_if_type(player, "fish")
+    if {_cid} is "":
+        stop
+    set {_uid}  to cs_get_uid(player)
+    set {_need} to {cs::clues::%{cs::session::%{_uid}%::tier}%::%{_cid}%::amount}
+    set {_prog} to {cs::session::%{_uid}%::progress::%{_cid}%}
+    if {_prog} < {_need}:
+        add 1 to {cs::session::%{_uid}%::progress::%{_cid}%}
+        cs_update_scroll_lore(player)
+        cs_check_clue_complete(player, {_cid})
+
+on enchant:
+    set {_cid} to cs_get_active_clue_if_type(player, "enchant")
+    if {_cid} is "":
+        stop
+    set {_uid}  to cs_get_uid(player)
+    set {_need} to {cs::clues::%{cs::session::%{_uid}%::tier}%::%{_cid}%::amount}
+    set {_prog} to {cs::session::%{_uid}%::progress::%{_cid}%}
+    if {_prog} < {_need}:
+        add 1 to {cs::session::%{_uid}%::progress::%{_cid}%}
+        cs_update_scroll_lore(player)
+        cs_check_clue_complete(player, {_cid})
+
+on brew:
+    loop all players:
+        set {_p}   to loop-player
+        set {_cid} to cs_get_active_clue_if_type({_p}, "brew")
+        if {_cid} is "":
+            continue
+        if distance between {_p} and event-block is less than 5:
+            set {_uid}  to cs_get_uid({_p})
+            set {_need} to {cs::clues::%{cs::session::%{_uid}%::tier}%::%{_cid}%::amount}
+            set {_prog} to {cs::session::%{_uid}%::progress::%{_cid}%}
+            if {_prog} < {_need}:
+                add 1 to {cs::session::%{_uid}%::progress::%{_cid}%}
+                cs_update_scroll_lore({_p})
+                cs_check_clue_complete({_p}, {_cid})
+
+on smelt:
+    loop all players:
+        set {_p}   to loop-player
+        set {_cid} to cs_get_active_clue_if_type({_p}, "smelt")
+        if {_cid} is "":
+            continue
+        if distance between {_p} and event-block is less than 5:
+            set {_uid}  to cs_get_uid({_p})
+            set {_need} to {cs::clues::%{cs::session::%{_uid}%::tier}%::%{_cid}%::amount}
+            set {_prog} to {cs::session::%{_uid}%::progress::%{_cid}%}
+            if {_prog} < {_need}:
+                add 1 to {cs::session::%{_uid}%::progress::%{_cid}%}
+                cs_update_scroll_lore({_p})
+                cs_check_clue_complete({_p}, {_cid})
+
+on player trade:
+    set {_cid} to cs_get_active_clue_if_type(player, "trade")
+    if {_cid} is "":
+        stop
+    set {_uid}  to cs_get_uid(player)
+    set {_need} to {cs::clues::%{cs::session::%{_uid}%::tier}%::%{_cid}%::amount}
+    set {_prog} to {cs::session::%{_uid}%::progress::%{_cid}%}
+    if {_prog} < {_need}:
+        add 1 to {cs::session::%{_uid}%::progress::%{_cid}%}
+        cs_update_scroll_lore(player)
+        cs_check_clue_complete(player, {_cid})
+
+on tame:
+    set {_cid} to cs_get_active_clue_if_type(player, "tame")
+    if {_cid} is "":
+        stop
+    set {_uid}    to cs_get_uid(player)
+    set {_tier}   to {cs::session::%{_uid}%::tier}
+    set {_target} to {cs::clues::%{_tier}%::%{_cid}%::target}
+    set {_animal} to "%type of event-entity%" in lowercase
+    if cs_target_matches({_target}, {_animal}) is true:
+        set {_need} to {cs::clues::%{_tier}%::%{_cid}%::amount}
+        set {_prog} to {cs::session::%{_uid}%::progress::%{_cid}%}
+        if {_prog} < {_need}:
+            add 1 to {cs::session::%{_uid}%::progress::%{_cid}%}
+            cs_update_scroll_lore(player)
+            cs_check_clue_complete(player, {_cid})
+
+on death of player:
+    set {_p}   to victim
+    set {_cid} to cs_get_active_clue_if_type({_p}, "die")
+    if {_cid} is "":
+        stop
+    set {_uid}  to cs_get_uid({_p})
+    set {_need} to {cs::clues::%{cs::session::%{_uid}%::tier}%::%{_cid}%::amount}
+    set {_prog} to {cs::session::%{_uid}%::progress::%{_cid}%}
+    if {_prog} < {_need}:
+        add 1 to {cs::session::%{_uid}%::progress::%{_cid}%}
+        cs_check_clue_complete({_p}, {_cid})
+
+on projectile hit:
+    projectile is an arrow
+    shooter is a player
+    victim is a living entity
+    victim is not a player
+    set {_p}   to shooter
+    set {_cid} to cs_get_active_clue_if_type({_p}, "shoot")
+    if {_cid} is "":
+        stop
+    set {_uid}  to cs_get_uid({_p})
+    set {_need} to {cs::clues::%{cs::session::%{_uid}%::tier}%::%{_cid}%::amount}
+    set {_prog} to {cs::session::%{_uid}%::progress::%{_cid}%}
+    if {_prog} < {_need}:
+        add 1 to {cs::session::%{_uid}%::progress::%{_cid}%}
+        cs_update_scroll_lore({_p})
+        cs_check_clue_complete({_p}, {_cid})
+
+on chat:
+    set {_cid} to cs_get_active_clue_if_type(player, "chat")
+    if {_cid} is "":
+        stop
+    set {_uid}  to cs_get_uid(player)
+    set {_need} to {cs::clues::%{cs::session::%{_uid}%::tier}%::%{_cid}%::amount}
+    set {_prog} to {cs::session::%{_uid}%::progress::%{_cid}%}
+    if {_prog} < {_need}:
+        add 1 to {cs::session::%{_uid}%::progress::%{_cid}%}
+        cs_update_scroll_lore(player)
+        cs_check_clue_complete(player, {_cid})
+
+on player enter bed:
+    set {_cid} to cs_get_active_clue_if_type(player, "sleep")
+    if {_cid} is "":
+        stop
+    set {_uid}  to cs_get_uid(player)
+    set {_need} to {cs::clues::%{cs::session::%{_uid}%::tier}%::%{_cid}%::amount}
+    set {_prog} to {cs::session::%{_uid}%::progress::%{_cid}%}
+    if {_prog} < {_need}:
+        add 1 to {cs::session::%{_uid}%::progress::%{_cid}%}
+        cs_update_scroll_lore(player)
+        cs_check_clue_complete(player, {_cid})
+
+on player jump:
+    set {_cid} to cs_get_active_clue_if_type(player, "jump")
+    if {_cid} is "":
+        stop
+    set {_uid}  to cs_get_uid(player)
+    set {_need} to {cs::clues::%{cs::session::%{_uid}%::tier}%::%{_cid}%::amount}
+    set {_prog} to {cs::session::%{_uid}%::progress::%{_cid}%}
+    if {_prog} < {_need}:
+        add 1 to {cs::session::%{_uid}%::progress::%{_cid}%}
+        cs_update_scroll_lore(player)
+        cs_check_clue_complete(player, {_cid})
+
+every 1 second:
+    loop all players:
+        set {_p}   to loop-player
+        set {_uid} to cs_get_uid({_p})
+        if {_uid} is not set:
+            continue
+        if {_uid} is "":
+            continue
+
+        if {_p} is swimming:
+            set {_cid} to cs_get_active_clue_if_type({_p}, "swim")
+            if {_cid} is not "":
+                set {_need} to {cs::clues::%{cs::session::%{_uid}%::tier}%::%{_cid}%::amount}
+                set {_prog} to {cs::session::%{_uid}%::progress::%{_cid}%}
+                if {_prog} < {_need}:
+                    add 1 to {cs::session::%{_uid}%::progress::%{_cid}%}
+                    cs_update_scroll_lore({_p})
+                    cs_check_clue_complete({_p}, {_cid})
+
+        if remaining air of {_p} < 0.3 seconds:
+            set {_cid2} to cs_get_active_clue_if_type({_p}, "dive")
+            if {_cid2} is not "":
+                set {_need2} to {cs::clues::%{cs::session::%{_uid}%::tier}%::%{_cid2}%::amount}
+                set {_prog2} to {cs::session::%{_uid}%::progress::%{_cid2}%}
+                if {_prog2} < {_need2}:
+                    add 1 to {cs::session::%{_uid}%::progress::%{_cid2}%}
+                    cs_update_scroll_lore({_p})
+                    cs_check_clue_complete({_p}, {_cid2})
+
+on right click on chest:
+    set {_cid} to cs_get_active_clue_if_type(player, "open")
+    if {_cid} is "":
+        stop
+    set {_uid}  to cs_get_uid(player)
+    set {_need} to {cs::clues::%{cs::session::%{_uid}%::tier}%::%{_cid}%::amount}
+    set {_prog} to {cs::session::%{_uid}%::progress::%{_cid}%}
+    if {_prog} < {_need}:
+        add 1 to {cs::session::%{_uid}%::progress::%{_cid}%}
+        cs_update_scroll_lore(player)
+        cs_check_clue_complete(player, {_cid})
+
+on pickup:
+    set {_cid} to cs_get_active_clue_if_type(player, "collect")
+    if {_cid} is "":
+        stop
+    set {_uid}    to cs_get_uid(player)
+    set {_tier}   to {cs::session::%{_uid}%::tier}
+    set {_target} to {cs::clues::%{_tier}%::%{_cid}%::target}
+    set {_item}   to "%type of event-item%" in lowercase
+    set {_count}  to amount of event-item
+    if cs_target_matches({_target}, {_item}) is true:
+        set {_need} to {cs::clues::%{_tier}%::%{_cid}%::amount}
+        set {_prog} to {cs::session::%{_uid}%::progress::%{_cid}%}
+        if {_prog} < {_need}:
+            add {_count} to {cs::session::%{_uid}%::progress::%{_cid}%}
+            cs_update_scroll_lore(player)
+            cs_check_clue_complete(player, {_cid})
+
+# Mengecek apakah progress clue sudah mencapai jumlah yang ditentukan.
+# Apabila ya, clue ditandai selesai, statistik player diperbarui, notifikasi dikirim,
+# kemudian memanggil "cs_check_scroll_complete()".
+# Terdapat guard untuk mencegah clue yang sama dihitung lebih dari sekali.
+function cs_check_clue_complete(p: player, cid: string):
+    set {_uid}  to cs_get_uid({_p})
+    if {_uid} is not set:
+        stop
+    if {_uid} is "":
+        stop
+    set {_tier} to {cs::session::%{_uid}%::tier}
+    set {_prog} to {cs::session::%{_uid}%::progress::%{_cid}%}
+    set {_need} to {cs::clues::%{_tier}%::%{_cid}%::amount}
+    set {_desc} to {cs::clues::%{_tier}%::%{_cid}%::desc}
+
+    if {_prog} < {_need}:
+        stop
+
+    if {cs::session::%{_uid}%::done::%{_cid}%} is set:
+        stop
+
+    set {cs::session::%{_uid}%::done::%{_cid}%} to true
+    add 1 to {cs::session::%{_uid}%::completed}
+
+    play sound "entity.player.levelup" with volume 0.6 and pitch 1.2 to {_p}
+    set {_doneNow}  to {cs::session::%{_uid}%::completed}
+    set {_totalNow} to {cs::session::%{_uid}%::total}
+
+    send "" to {_p}
+    send "&f&m                                  " to {_p}
+    send "  &a✔ &fClue Selesai!" to {_p}
+    send "" to {_p}
+    send "  &fTugas: &a%{_desc}%" to {_p}
+    send "  &fProgres: &f%{_doneNow}% &7/ &f%{_totalNow}% clue" to {_p}
+    if {_doneNow} < {_totalNow}:
+        send "  &a✦ &fKlik Kanan scrollmu untuk mulai clue berikutnya!" to {_p}
+    send "&f&m                                  " to {_p}
+    send "" to {_p}
+
+    delete {cs::session::%{_uid}%::current_clue}
+
+    add 1 to {cs::stats::%{_p}'s uuid%::clues_completed}
+    add 1 to {cs::stats::%{_p}'s uuid%::clues_%{_tier}%}
+
+    cs_update_scroll_lore({_p})
+    cs_check_scroll_complete({_p})
+
+# Mengecek apakah semua clue dalam sesi sudah selesai.
+# Apabila ya, memanggil "cs_complete_scroll()".
+function cs_check_scroll_complete(p: player):
+    set {_uid}   to cs_get_uid({_p})
+    if {_uid} is not set:
+        stop
+    if {_uid} is "":
+        stop
+    set {_done}  to {cs::session::%{_uid}%::completed}
+    set {_total} to {cs::session::%{_uid}%::total}
+    if {_done} >= {_total}:
+        cs_complete_scroll({_p})
+
+# Menyelesaikan scroll player secara penuh.
+# Memberikan reward sebanyak 2x untuk tier easy/medium dan 3x untuk hard,
+# dipilih menggunakan weighted random. Item scroll dihapus dari inventory,
+# statistik player diperbarui, broadcast dikirim ke seluruh server,
+# sesi dihapus, dan timestamp cooldown disimpan.
+function cs_complete_scroll(p: player):
+    set {_uid}     to cs_get_uid({_p})
+    if {_uid} is not set:
+        stop
+    if {_uid} is "":
+        stop
+    set {_tier}    to {cs::session::%{_uid}%::tier}
+    set {_display} to cs_tier_display({_tier})
+
+    play sound "ui.toast.challenge_complete" with volume 1 and pitch 1 to {_p}
+    send title "&6&l✦ SCROLL SELESAI!" with subtitle "&fReward %{_display}% &ftelah diberikan!" to {_p} for 4 seconds
+
+    send "" to {_p}
+    send "&f&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" to {_p}
+    send "    &6✦ &f&lCLUE SCROLL SELESAI! &6✦" to {_p}
+    send "&f&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" to {_p}
+    send "" to {_p}
+    send "  &fTier    : %{_display}%" to {_p}
+    send "  &fPemain  : &f%name of {_p}%" to {_p}
+    send "" to {_p}
+    send "  &f&lREWARD:" to {_p}
+
+    set {_numRewards} to 2
+    if {_tier} is "hard":
+        set {_numRewards} to 3
+
+    loop {_numRewards} times:
+        set {_rname} to cs_pick_reward({_tier})
+        if {_rname} is not "":
+            set {_rtype} to {cs::rewards::%{_tier}%::%{_rname}%::type}
+            set {_rval}  to {cs::rewards::%{_tier}%::%{_rname}%::value}
+            if {_rtype} is "command":
+                set {_cmd}   to {_rval}
+                set {_pname} to name of {_p}
+                replace all "{player}" in {_cmd} with {_pname}
+                execute console command {_cmd}
+                send "  &a✔ &fReward diberikan!" to {_p}
+
+    send "" to {_p}
+    send "&f&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" to {_p}
+    send "" to {_p}
+
+    add 1 to {cs::stats::%{_p}'s uuid%::scrolls_completed}
+    add 1 to {cs::stats::%{_p}'s uuid%::scrolls_%{_tier}%}
+
+    broadcast "%{cs::config::prefix}%&f%name of {_p}% &7telah menyelesaikan &f%{_display}%&7 Clue Scroll!"
+
+    loop integers from 0 to 35:
+        set {_curSlot} to loop-integer
+        set {_s}       to slot {_curSlot} of {_p}'s inventory
+        if name of {_s} contains "Clue Scroll":
+            set {_slore::*} to lore of {_s}
+            loop {_slore::*}:
+                if loop-value-2 contains "uid:":
+                    set {_checkUid} to loop-value-2
+                    replace all "&8" in {_checkUid} with ""
+                    replace all "§8" in {_checkUid} with ""
+                    replace all "uid:" in {_checkUid} with ""
+                    replace all " " in {_checkUid} with ""
+                    if {_checkUid} is {_uid}:
+                        set slot {_curSlot} of {_p}'s inventory to air
+                        delete {_slore::*}
+                        stop loop
+            delete {_slore::*}
+
+    cs_pause_session({_p})
+    cs_delete_session({_uid})
+    set {cs::cooldown::%{_p}'s uuid%::%{_tier}%} to now
+
+# Menampilkan progress scroll aktif milik player di chat.
+# Menampilkan semua clue beserta status selesai atau belum dan progress saat ini.
+function cs_show_scroll(p: player):
+    set {_uid} to cs_get_uid({_p})
+    if {_uid} is not set:
+        send "%{cs::config::prefix}%&fKamu tidak punya scroll aktif." to {_p}
+        stop
+    if {_uid} is "":
+        send "%{cs::config::prefix}%&fKamu tidak punya scroll aktif." to {_p}
+        stop
+
+    set {_tier}  to {cs::session::%{_uid}%::tier}
+    set {_done}  to {cs::session::%{_uid}%::completed}
+    set {_total} to {cs::session::%{_uid}%::total}
+
+    send "&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" to {_p}
+    send " &6✦ &lClue Scroll &7[%cs_tier_display({_tier})%&7]" to {_p}
+    send " &7Progress: &f%{_done}%&7/&f%{_total}%" to {_p}
+    send "" to {_p}
+
+    loop {cs::session::%{_uid}%::clues::*}:
+        set {_cid}  to loop-value
+        set {_prog} to {cs::session::%{_uid}%::progress::%{_cid}%}
+        set {_need} to {cs::clues::%{_tier}%::%{_cid}%::amount}
+        set {_desc} to {cs::clues::%{_tier}%::%{_cid}%::desc}
+        if {_prog} >= {_need}:
+            send " &a✔ &m%{_desc}%" to {_p}
+        else:
+            send " &c✘ &f%{_desc}% &7(%{_prog}%/%{_need}%)" to {_p}
+
+    send "&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" to {_p}
+
+# Mengecek apakah player masih dalam masa cooldown untuk tier tertentu.
+# Apabila masih cooldown, mengirim pesan sisa waktu ke player dan mengembalikan "false".
+# Mengembalikan "true" apabila player sudah boleh membuka scroll kembali.
+function cs_check_cooldown(p: player, tier: string) :: boolean:
+    set {_cd} to {cs::config::cooldown::%{_tier}%}
+    if {_cd} is 0:
+        return true
+    set {_last} to {cs::cooldown::%{_p}'s uuid%::%{_tier}%}
+    if {_last} is not set:
+        return true
+    set {_elapsed}    to difference between {_last} and now
+    set {_elapsedSec} to {_elapsed} / 1 second
+    if {_elapsedSec} >= {_cd}:
+        return true
+    set {_remain} to {_cd} - {_elapsedSec}
+    send "%{cs::config::prefix}%&fCooldown! Tunggu &f%{_remain}% &fdetik lagi." to {_p}
+    return false
+
+command /cluescrolls [<text>] [<text>] [<text>] [<text>]:
+    aliases: /cs, /clue
+    trigger:
+        cs_command(player, arg-1, arg-2, arg-3, arg-4)
+
+# Handler utama untuk semua subcommand "/cs".
+# Meneruskan eksekusi ke fungsi yang sesuai berdasarkan argumen pertama.
+# Subcommand yang didukung: "scroll", "abandon", "stats", "leaderboard",
+# "give", "reload", "forcecomplete", dan "resetcooldown".
+function cs_command(p: player, a1: string, a2: string, a3: string, a4: string):
+    if {_a1} is not set:
+        send "%{cs::config::prefix}%&7Penggunaan:" to {_p}
+        send "  &f/cs give <player> <tier> &7- Beri scroll [OP]" to {_p}
+        send "  &f/cs scroll &7- Tampilkan progress" to {_p}
+        send "  &f/cs stats [player] &7- Lihat statistik" to {_p}
+        send "  &f/cs abandon &7- Tinggalkan scroll aktif" to {_p}
+        send "  &f/cs reload &7- Reload konfigurasi [OP]" to {_p}
+        send "  &f/cs leaderboard &7- Top pemain" to {_p}
+        stop
+
+    if {_a1} is "scroll":
+        cs_show_scroll({_p})
+        stop
+
+    set {_isAbandon} to false
+    if {_a1} is "abandon":
+        set {_isAbandon} to true
+    if {_a1} is "drop":
+        set {_isAbandon} to true
+    if {_isAbandon} is true:
+        set {_uid} to cs_get_uid({_p})
+        if {_uid} is not set:
+            send "%{cs::config::prefix}%&fKamu tidak punya scroll aktif." to {_p}
+            stop
+        if {_uid} is "":
+            send "%{cs::config::prefix}%&fKamu tidak punya scroll aktif." to {_p}
+            stop
+        cs_pause_session({_p})
+        cs_delete_session({_uid})
+        send "%{cs::config::prefix}%&fScroll ditinggalkan." to {_p}
+        stop
+
+    set {_isStats} to false
+    if {_a1} is "stats":
+        set {_isStats} to true
+    if {_a1} is "statistics":
+        set {_isStats} to true
+    if {_isStats} is true:
+        if {_a2} is set:
+            if {_p} doesn't have permission "cluescrolls.admin":
+                send "%{cs::config::prefix}%&fKamu tidak punya izin untuk melihat stats orang lain." to {_p}
+                stop
+            set {_target} to {_a2} parsed as player
+            if {_target} is not set:
+                send "%{cs::config::prefix}%&fPlayer %{_a2}% tidak ditemukan." to {_p}
+                stop
+            cs_show_stats({_p}, {_target})
+        else:
+            cs_show_stats({_p}, {_p})
+        stop
+
+    set {_isLb} to false
+    if {_a1} is "leaderboard":
+        set {_isLb} to true
+    if {_a1} is "lb":
+        set {_isLb} to true
+    if {_a1} is "top":
+        set {_isLb} to true
+    if {_isLb} is true:
+        cs_show_leaderboard({_p})
+        stop
+
+    if {_a1} is "give":
+        if {_p} doesn't have permission "cluescrolls.give":
+            if {_p} is not op:
+                send "%{cs::config::prefix}%&fKamu tidak punya izin." to {_p}
+                stop
+        set {_missingArgs} to false
+        if {_a2} is not set:
+            set {_missingArgs} to true
+        if {_a3} is not set:
+            set {_missingArgs} to true
+        if {_missingArgs} is true:
+            send "%{cs::config::prefix}%&fPenggunaan: &f/cs give <player> <easy|medium|hard>" to {_p}
+            stop
+        set {_target} to {_a2} parsed as player
+        if {_target} is not set:
+            send "%{cs::config::prefix}%&fPlayer %{_a2}% tidak ditemukan." to {_p}
+            stop
+        set {_tier} to {_a3} in lowercase
+        if {_tier} is not "easy":
+            if {_tier} is not "medium":
+                if {_tier} is not "hard":
+                    send "%{cs::config::prefix}%&fTier tidak valid! Gunakan: easy, medium, atau hard." to {_p}
+                    stop
+        set {_scroll} to cs_create_scroll_item({_tier}, {_target})
+        give {_scroll} to {_target}
+        send "%{cs::config::prefix}%&fBerhasil memberi %cs_tier_display({_tier})% &fScroll kepada &f%name of {_target}%." to {_p}
+        send "%{cs::config::prefix}%&fKamu mendapat %cs_tier_display({_tier})% &fClue Scroll! Klik kanan untuk membukanya." to {_target}
+        stop
+
+    set {_isReload} to false
+    if {_a1} is "reload":
+        set {_isReload} to true
+    if {_a1} is "rl":
+        set {_isReload} to true
+    if {_isReload} is true:
+        if {_p} doesn't have permission "cluescrolls.reload":
+            if {_p} is not op:
+                send "%{cs::config::prefix}%&fKamu tidak punya izin." to {_p}
+                stop
+        send "%{cs::config::prefix}%&fReloading ClueScrolls..." to {_p}
+        delete {cs::clues::*}
+        delete {cs::rewards::*}
+        cs_init_clues()
+        cs_init_rewards()
+        send "%{cs::config::prefix}%&fClueScrolls berhasil di-reload!" to {_p}
+        stop
+
+    set {_isFc} to false
+    if {_a1} is "forcecomplete":
+        set {_isFc} to true
+    if {_a1} is "fc":
+        set {_isFc} to true
+    if {_isFc} is true:
+        if {_p} is not op:
+            send "%{cs::config::prefix}%&fHanya OP." to {_p}
+            stop
+        if {_a2} is not set:
+            send "%{cs::config::prefix}%&fPenggunaan: /cs forcecomplete <player>" to {_p}
+            stop
+        set {_target} to {_a2} parsed as player
+        if {_target} is not set:
+            send "%{cs::config::prefix}%&fPlayer tidak ditemukan." to {_p}
+            stop
+        set {_tuid} to cs_get_uid({_target})
+        if {_tuid} is not set:
+            send "%{cs::config::prefix}%&fPlayer tersebut tidak punya scroll aktif." to {_p}
+            stop
+        if {_tuid} is "":
+            send "%{cs::config::prefix}%&fPlayer tersebut tidak punya scroll aktif." to {_p}
+            stop
+        cs_complete_scroll({_target})
+        send "%{cs::config::prefix}%&fScroll %name of {_target}% diselesaikan paksa." to {_p}
+        stop
+
+    set {_isRc} to false
+    if {_a1} is "resetcooldown":
+        set {_isRc} to true
+    if {_a1} is "rc":
+        set {_isRc} to true
+    if {_isRc} is true:
+        if {_p} is not op:
+            send "%{cs::config::prefix}%&fHanya OP." to {_p}
+            stop
+        if {_a2} is not set:
+            send "%{cs::config::prefix}%&fPenggunaan: /cs resetcooldown <player> [tier]" to {_p}
+            stop
+        set {_target} to {_a2} parsed as player
+        if {_target} is not set:
+            send "%{cs::config::prefix}%&fPlayer tidak ditemukan." to {_p}
+            stop
+        if {_a3} is set:
+            delete {cs::cooldown::%{_target}'s uuid%::%{_a3}%}
+        else:
+            delete {cs::cooldown::%{_target}'s uuid%::easy}
+            delete {cs::cooldown::%{_target}'s uuid%::medium}
+            delete {cs::cooldown::%{_target}'s uuid%::hard}
+        send "%{cs::config::prefix}%&fCooldown %name of {_target}% direset." to {_p}
+        stop
+
+    send "%{cs::config::prefix}%&fPerintah tidak dikenal. Ketik &f/cs &cuntuk bantuan." to {_p}
+
+# Menampilkan statistik scroll milik "target" kepada "viewer" di chat.
+# Menampilkan total scroll selesai, total clue selesai, dan jumlah per tier.
+function cs_show_stats(viewer: player, target: player):
+    set {_sc} to {cs::stats::%{_target}'s uuid%::scrolls_completed}
+    set {_cc} to {cs::stats::%{_target}'s uuid%::clues_completed}
+    set {_se} to {cs::stats::%{_target}'s uuid%::scrolls_easy}
+    set {_sm} to {cs::stats::%{_target}'s uuid%::scrolls_medium}
+    set {_sh} to {cs::stats::%{_target}'s uuid%::scrolls_hard}
+    if {_sc} is not set:
+        set {_sc} to 0
+    if {_cc} is not set:
+        set {_cc} to 0
+    if {_se} is not set:
+        set {_se} to 0
+    if {_sm} is not set:
+        set {_sm} to 0
+    if {_sh} is not set:
+        set {_sh} to 0
+
+    send "&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" to {_viewer}
+    send "  &6📜 Statistik &f%name of {_target}%" to {_viewer}
+    send "" to {_viewer}
+    send "  &7Scroll Selesai : &f%{_sc}%" to {_viewer}
+    send "  &7Clue Selesai   : &f%{_cc}%" to {_viewer}
+    send "" to {_viewer}
+    send "  &aEasy   &7: &f%{_se}% &7scroll" to {_viewer}
+    send "  &eMedium &7: &f%{_sm}% &7scroll" to {_viewer}
+    send "  &cHard   &7: &f%{_sh}% &7scroll" to {_viewer}
+    send "&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" to {_viewer}
+
+# Menampilkan leaderboard 10 player teratas berdasarkan total scroll yang diselesaikan.
+# Hanya menampilkan player yang sedang online dan memiliki scroll selesai lebih dari 0.
+function cs_show_leaderboard(p: player):
+    send "&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" to {_p}
+    send "        &6🏆 &lTop Clue Scrolls" to {_p}
+    send "" to {_p}
+    set {_rank} to 0
+    loop all players:
+        if {_rank} >= 10:
+            stop loop
+        set {_sc} to {cs::stats::%loop-player's uuid%::scrolls_completed}
+        if {_sc} is not set:
+            set {_sc} to 0
+        if {_sc} > 0:
+            add 1 to {_rank}
+            if {_rank} is 1:
+                set {_medal} to "&6#1"
+            else if {_rank} is 2:
+                set {_medal} to "&7#2"
+            else if {_rank} is 3:
+                set {_medal} to "&c#3"
+            else:
+                set {_medal} to "&7#%{_rank}%"
+            send "  %{_medal}% &f%name of loop-player% &7- &f%{_sc}% &7scroll" to {_p}
+    if {_rank} is 0:
+        send "  &7Belum ada data..." to {_p}
+    send "&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" to {_p}
+
+on quit:
+    set {_uid} to cs_get_uid(player)
+    if {_uid} is set:
+        if {_uid} is not "":
+            cs_pause_session(player)
+    set {cs::lastquit::%player's uuid%} to now
